@@ -258,8 +258,8 @@ print("Preço final 10 anos RAIZ4: ", preco_fim10_raiz4)
 
 
 
-
-#Ibovespa 1 ano
+# Ibovespa
+# Ibovespa 1 ano
 ticker_ibov ="ibov"
 df_ibov1 = pegar_preco_diversos (ticker_ibov, data_ini1, data_fim1)
 preco_ini1 = df_ibov1[0:1] ["fechamento"].iloc[0]
@@ -268,8 +268,7 @@ lucro_ibov1 = (preco_fim1/preco_ini1)-1
 print("Lucro Ibovespa 1 ano: ", lucro_ibov1)
 print("Preço inicial Ibovespa 1 ano: ", preco_ini1)
 print("Preço final Ibovespa 1 ano: ", preco_fim1)
-
-#Ibovespa 5 anos
+# Ibovespa 5 anos
 ticker5 ="ibov"
 df_ibov5 = pegar_preco_diversos (ticker5, data_ini5, data_fim5)
 preco_ini5 = df_ibov5[0:1] ["fechamento"].iloc[0]
@@ -278,8 +277,7 @@ lucro_ibov5 = (preco_fim5/preco_ini5)-1
 print("Lucro Ibovespa 5 anos: ", lucro_ibov5)
 print("Preço inicial Ibovespa 5 anos: ", preco_ini5)
 print("Preço final Ibovespa 5 anos: ", preco_fim5)
-
-#Ibovespa 10 anos
+# Ibovespa 10 anos
 ticker10 ="ibov"
 df_ibov10 = pegar_preco_diversos (ticker10, data_ini10, data_fim10)
 preco_ini10 = df_ibov10[0:1] ["fechamento"].iloc[0]
@@ -291,49 +289,72 @@ print("Preço final Ibovespa 10 anos: ", preco_fim10)
 
 
 
-# Gráfico de comparação de ações e Ibovespa
+
+# Gráfico de comparação de 10 anos de SMTO3, SLCE3 e Ibovespa com dois eixos y
+from modulos import pegar_preco_corrigido, pegar_preco_diversos
 import matplotlib.pyplot as plt
-# Gráfico de comparação de ações e Ibovespa
-df_ibov = df_ibov1[["data", "fechamento"]]
-df_ibov = df_ibov.rename(columns={"fechamento": "ibov"})
-df_preco = df_preco1[["data", "fechamento"]]
-df_preco = df_preco.rename(columns={"fechamento": "SMTO3"})
-df_grafico = pd.merge(df_ibov, df_preco, on="data")
-df_grafico.plot(x="data", title="Comparação de SMTO3 e Ibovespa", ylabel="Preço (R$)")
+import matplotlib.dates as mdates
+import pandas as pd
 
+# Define período de 10 anos
+data_ini = "2014-04-01"
+data_fim = "2025-03-31"
 
+# Seleciona apenas SMTO3, SLCE3 e Ibovespa
+list_ticker = ["SMTO3", "SLCE3"]
 
+# Cria DataFrame com preços das ações
+df_stocks = pd.DataFrame()
+for ticker in list_ticker:
+    df_temp = pegar_preco_corrigido(ticker, data_ini, data_fim)[["data", "fechamento"]]
+    df_temp = df_temp.rename(columns={"fechamento": ticker})
+    if df_stocks.empty:
+        df_stocks = df_temp.copy()
+    else:
+        df_stocks = pd.merge(df_stocks, df_temp, on="data", how="outer")
 
+# Preço do Ibovespa
+df_ibov = pegar_preco_diversos("ibov", data_ini, data_fim)[["data", "fechamento"]]
+df_ibov = df_ibov.rename(columns={"fechamento": "Ibovespa"})
 
-# Gráfico de comparação de SMT03 e Ibovespa com dois eixos y
-import matplotlib.pyplot as plt
-# ...existing code...
-# Gráfico de comparação de ações e Ibovespa com dois eixos y e eixo x ajustado
+# Mescla os dados das ações com o Ibovespa
+df_grafico = pd.merge(df_stocks, df_ibov, on="data", how="inner")
+df_grafico["data"] = pd.to_datetime(df_grafico["data"])
+df_grafico = df_grafico.sort_values("data")
+
+# Cria o gráfico com dois eixos y
 fig, ax1 = plt.subplots(figsize=(12, 6))
 
-# Plot para o SMTO3 no eixo esquerdo
+# Plota SMTO3 e SLCE3 no eixo esquerdo
 ax1.plot(df_grafico["data"], df_grafico["SMTO3"], color="blue", label="SMTO3")
+ax1.plot(df_grafico["data"], df_grafico["SLCE3"], color="green", label="SLCE3")
 ax1.set_xlabel("Data")
-ax1.set_ylabel("SMTO3 (R$)", color="blue")
-ax1.tick_params(axis="y", labelcolor="blue")
+ax1.set_ylabel("Preço das Ações (R$)")
+ax1.tick_params(axis="y")
 
-# Cria segundo eixo y para o Ibovespa
+# Formatação do eixo x para datas mais legíveis
+ax1.xaxis.set_major_locator(mdates.YearLocator())
+ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
+plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha="right")
+
+# Plota o Ibovespa no eixo direito
 ax2 = ax1.twinx()
-ax2.plot(df_grafico["data"], df_grafico["ibov"], color="red", label="Ibovespa")
+ax2.plot(df_grafico["data"], df_grafico["Ibovespa"], color="red", label="Ibovespa", linewidth=2)
 ax2.set_ylabel("Ibovespa (R$)", color="red")
 ax2.tick_params(axis="y", labelcolor="red")
 
-# Ajuste do eixo x para melhor visualização das datas
-fig.autofmt_xdate(rotation=45)
-plt.title("Comparação de SMTO3 e Ibovespa")
+# Legenda combinada
+lines1, labels1 = ax1.get_legend_handles_labels()
+lines2, labels2 = ax2.get_legend_handles_labels()
+ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+
+plt.title("Comparação de 10 anos: SMTO3, SLCE3 e Ibovespa")
 fig.tight_layout()
 plt.show()
-# ...existing code...
 
 
 
-
-# Gráfico de comparação de todas ("SLCE3", "AGRO3", "TTEN3", "SOJA3", "RAIZ4", "SMTO3") as ações e Ibovespa com dois eixos y
+# Gráfico de comparação de 1 ano de todas ("SLCE3", "AGRO3", "TTEN3", "SOJA3", "RAIZ4", "SMTO3") as ações e Ibovespa com dois eixos y
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -389,5 +410,69 @@ ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
 # Ajusta o eixo x para melhor visualização das datas
 fig.autofmt_xdate(rotation=45)
 plt.title("Comparação de Ações e Ibovespa")
+fig.tight_layout()
+plt.show()
+
+
+
+
+
+
+# Gráfico de comparação de 10 ano de todas ("SLCE3", "AGRO3", "TTEN3", "SOJA3", "RAIZ4", "SMTO3") as ações e Ibovespa com dois eixos y
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Define período para os backtests de 10 anos
+data_ini = "2014-04-01"
+data_fim = "2025-03-31"
+
+# Lista de todas as ações
+list_ticker = ["SLCE3", "AGRO3", "TTEN3", "SOJA3", "RAIZ4", "SMTO3"]
+
+# Cria um DataFrame que irá conter os preços de fechamento de todas as ações
+df_stocks = pd.DataFrame()
+
+for ticker in list_ticker:
+    df_temp = pegar_preco_corrigido(ticker, data_ini, data_fim)[["data", "fechamento"]]
+    df_temp = df_temp.rename(columns={"fechamento": ticker})
+    if df_stocks.empty:
+        df_stocks = df_temp.copy()
+    else:
+        df_stocks = pd.merge(df_stocks, df_temp, on="data", how="outer")
+
+# Obtém o preço do Ibovespa no mesmo período
+df_ibov = pegar_preco_diversos("ibov", data_ini, data_fim)[["data", "fechamento"]]
+df_ibov = df_ibov.rename(columns={"fechamento": "Ibovespa"})
+
+# Mescla os dados das ações com os do Ibovespa
+df_grafico = pd.merge(df_stocks, df_ibov, on="data", how="inner")
+df_grafico["data"] = pd.to_datetime(df_grafico["data"])
+df_grafico = df_grafico.sort_values("data")
+
+# Cria o gráfico com dois eixos y
+fig, ax1 = plt.subplots(figsize=(12, 6))
+
+# Plota as ações no eixo esquerdo
+colors = ['blue', 'green', 'orange', 'purple', 'brown', 'cyan']
+for i, ticker in enumerate(list_ticker):
+    ax1.plot(df_grafico["data"], df_grafico[ticker], color=colors[i % len(colors)], label=ticker)
+ax1.set_xlabel("Data")
+ax1.set_ylabel("Preço Ações (R$)")
+ax1.tick_params(axis="y")
+
+# Plota o Ibovespa no eixo direito
+ax2 = ax1.twinx()
+ax2.plot(df_grafico["data"], df_grafico["Ibovespa"], color="red", label="Ibovespa", linewidth=2)
+ax2.set_ylabel("Preço Ibovespa (R$)", color="red")
+ax2.tick_params(axis="y", labelcolor="red")
+
+# Combina as legendas dos dois eixos
+lines1, labels1 = ax1.get_legend_handles_labels()
+lines2, labels2 = ax2.get_legend_handles_labels()
+ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+
+# Ajusta o eixo x para melhor visualização das datas
+fig.autofmt_xdate(rotation=45)
+plt.title("Comparação de Ações e Ibovespa - 10 anos")
 fig.tight_layout()
 plt.show()
